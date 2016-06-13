@@ -107,9 +107,16 @@ RawCommandResponse RapcomBase::OnRawCommand(const char* jsonString, size_t lengt
         {
             // Check if we have a response code
             Value::ConstMemberIterator responseItr = requestDoc.FindMember("ResponseCode");
-            if (responseItr != requestDoc.MemberEnd() && responseItr->value.IsString())
+            if (responseItr != requestDoc.MemberEnd())
             {
-                responseCode = responseItr->value.GetString();
+                if (responseItr->value.IsString())
+                {
+                    responseCode = responseItr->value.GetString();
+                }
+                if (responseItr->value.IsNumber())
+                {
+                    responseCode = std::to_string(responseItr->value.GetInt());
+                }
             }
 
             // Try to match the command

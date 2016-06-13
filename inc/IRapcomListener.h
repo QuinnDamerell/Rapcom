@@ -16,6 +16,6 @@ namespace Rapcom
         virtual void OnConfigChange(rapidjson::Document& oldConfig, rapidjson::Document& newConfig) = 0;
 
         // Fired when a command has been issued
-        virtual void OnCommand(rapidjson::Document& command) = 0;
+        virtual void OnCommand(rapidjson::Document& request, rapidjson::Document& response) = 0;
     };
 }

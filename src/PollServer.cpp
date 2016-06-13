@@ -72,7 +72,7 @@ bool PollServer::DoThreadWork()
             std::string postData = "data=" + m_response.jsonResponse;
 
             // Make the request
-            mg_connect_http(&m_eventManager, event_hander, responseUrl.c_str(), NULL, postData.c_str());
+            mg_connect_http(&m_eventManager, event_hander, responseUrl.c_str(), "Content-Type: application/x-www-form-urlencoded\r\n", postData.c_str());
 
             m_nextAction = NextAction::WaitOnResponseRequest;
             break;
