@@ -142,7 +142,7 @@ RawCommandResponse RapcomBase::OnRawCommand(const char* jsonString, size_t lengt
                 // This isn't a command for us, send it along.
                 if (auto listener = m_listener.lock())
                 {
-                    listener->OnCommand(requestDoc);
+                    listener->OnCommand(requestDoc, responseDoc);
                 }
             }
         }
