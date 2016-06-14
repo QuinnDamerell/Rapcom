@@ -78,6 +78,29 @@ namespace Rapcom
                 return iter->value.GetInt();
             }
         }
+
+        // If not there, add it
+        document.AddMember(rapidjson::Value(name.c_str(), document.GetAllocator()), rapidjson::Value(defaultValue), document.GetAllocator());
+        return defaultValue;
+    }
+
+    static int64_t GetIntOrDefault(rapidjson::Document& document, std::string name, int64_t defaultValue)
+    {
+        auto iter = document.FindMember(name.c_str());
+        if (iter != document.MemberEnd())
+        {
+            if (iter->value.IsInt())
+            {
+                return iter->value.GetInt();
+            }
+            else if (iter->value.IsInt64())
+            {
+                return iter->value.GetInt64();
+            }
+        }
+
+        // If not there, add it
+        document.AddMember(rapidjson::Value(name.c_str(), document.GetAllocator()), rapidjson::Value(defaultValue), document.GetAllocator());
         return defaultValue;
     }
 
@@ -110,7 +133,10 @@ namespace Rapcom
             return ConfigChangeType::Updated;
         }
 
-        // Todo, compare the actual types.
+        if (newIter->value != orgIter->value)
+        {
+            return ConfigChangeType::Updated;
+        }
 
         return ConfigChangeType::None;
     }

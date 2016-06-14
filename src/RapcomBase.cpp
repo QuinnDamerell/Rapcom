@@ -46,8 +46,6 @@ RapcomBase::RapcomBase(std::string channelName, IRapcomListenerWeakPtr listener)
     {
         m_currentConfig.SetObject();
     }
-
-    m_currentConfig.AddMember("test", 123, m_currentConfig.GetAllocator());
 }
 
 Document& RapcomBase::GetConfig()
@@ -187,7 +185,7 @@ RawCommandResponse RapcomBase::OnRawCommand(const char* jsonString, size_t lengt
 void RapcomBase::SetDocumentError(Document& document, std::string errorText)
 {
     document.AddMember("Status", "Error", document.GetAllocator());
-    document.AddMember("ErrorText", StringRef(errorText.c_str()), document.GetAllocator()); //todo fix me
+    document.AddMember("ErrorText", Value(errorText.c_str(), document.GetAllocator()), document.GetAllocator());
 }
     
 void RapcomBase::SetDocumentSuccess(Document& document)

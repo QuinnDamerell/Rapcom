@@ -19,6 +19,12 @@
 
                 // Create a connection and set the handlers
                 rapcomConnection = CreateRapcomConnection("Prism");
+                
+                // Setup a handler for on connected
+                rapcomConnection.OnConnecting = function()
+                {
+                    $("#statusBlock").html("Connecting...");
+                };
 
                 // Setup a handler for on connected
                 rapcomConnection.OnConnected = function()
