@@ -1,0 +1,115 @@
+<html>
+    <head>
+        <script src="jquery-1.12.4.min.js" type="text/javascript"></script>
+        <script src="Rapcom.js" type="text/javascript"></script>
+
+        <script type="text/javascript" >
+
+        // Holds our main connection.
+        var rapcomConnection;
+
+        // Wait for the body to be ready.
+        $( document ).ready(function() 
+        {
+            // Handle when the user clicks connect
+            $("#connectform").submit(function (event) 
+            {
+                // Stop the submit
+                event.preventDefault();
+
+                // Create a connection and set the handlers
+                rapcomConnection = CreateRapcomConnection("Prism");
+
+                // Setup a handler for on connected
+                rapcomConnection.OnConnected = function()
+                {
+                    $("#statusBlock").html("Connected");
+                    $("#configBlock").html("Retrieving...");                    
+
+                    // Get the config when we are connected
+                    rapcomConnection.GetConfig()
+                    .complete = function(wasSuccess, config)
+                    {
+                        if(!wasSuccess)
+                        {
+                            $("#statusBlock").html("Failed to get config");
+                            $("#configBlock").html("Failed");                        
+                        }
+                        else
+                        {
+                            $("#statusBlock").html("Recieved Config");
+                            $("#configBlock").html(JSON.stringify(config));
+                        }
+                    }
+                };
+
+                // Setup a handler for disconnected
+                rapcomConnection.OnDisconnected = function()
+                {
+                    $("#statusBlock").html("Disconnected");
+                };  
+
+                return false;
+            });     
+
+            // Command sender logic
+            $("#commandSender").submit(function (event) 
+            {
+                // Stop the submit
+                event.preventDefault();
+
+                // Send the command
+                rapcomConnection.SendCommand($("#Command").val(), true, $("#Value1").val(), $("#Value2").val())
+                .complete = function(wasSuccess, data)
+                {
+                    $("#statusBlock").html("Command Sent");
+                    $("#commandResultBlock").html("Result: "+ JSON.stringify(data));
+                }
+
+                rapcomConnection.SetConfig({"ClientConfig":"TES55T","Another":"HAHAT"});
+                return false;
+            });   
+        });   
+        </script>
+    </head>
+<body>
+    <h1>Rapcom Test Page</h1>
+
+    <form action="/" method="get" name="connectform" id="connectform">
+        <p>
+            <label>Channel: </label>
+            <input type="text" name="RapcomChannel" id="RapcomChannel" style="margin-top:5px;" value="Prism"></input>
+        </p>
+        <input value="Connect" type="submit">       
+    </form>    
+
+    <h2>Status</h2>
+    <p id="statusBlock">Not Connected</p>
+
+    <h2>Config</h2>
+    <p id="configBlock">None</p>
+
+    <h2>Send Command</h2>
+    <form action="/" method="get" name="commandSender" id="commandSender">
+        <p>
+            <label for="Command">Command:</label>
+            <input type="text" name="Command" id="Command" style="margin-left:5px; margin-top:5px;">
+        </p>
+        <p>
+            <label for="Value1Text">Value 1:</label>
+            <input type="text" name="Value1" id="Value1" style="margin-left:21px; margin-top:6px;">
+        </p>
+        <p>
+            <label for="Value2Text">Value 2:</label>
+            <input type="text" name="Value2" id="Value2" style="margin-left:21px; margin-top:6px;">
+        </p>
+       <p>
+            <label for="Value3Text">Value 3:</label>
+            <input type="text" name="Value3" id="Value3" style="margin-left:21px; margin-top:6px;"> 
+        </p>
+        <input value="Send Command" type="submit">
+
+        <p id="commandResultBlock">Result:</p>
+    </form>   
+</body>
+</html>

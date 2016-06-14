@@ -47,7 +47,7 @@ RapcomBase::RapcomBase(std::string channelName, IRapcomListenerWeakPtr listener)
         m_currentConfig.SetObject();
     }
 
-    m_currentConfig.AddMember("test", 34879374, m_currentConfig.GetAllocator());
+    m_currentConfig.AddMember("test", 123, m_currentConfig.GetAllocator());
 }
 
 Document& RapcomBase::GetConfig()
@@ -115,7 +115,7 @@ RawCommandResponse RapcomBase::OnRawCommand(const char* jsonString, size_t lengt
                 }
                 if (responseItr->value.IsNumber())
                 {
-                    responseCode = std::to_string(responseItr->value.GetInt());
+                    responseCode = std::to_string(responseItr->value.GetInt64());
                 }
             }
 
@@ -126,7 +126,17 @@ RawCommandResponse RapcomBase::OnRawCommand(const char* jsonString, size_t lengt
                 Value::ConstMemberIterator configItr = requestDoc.FindMember("Value1");
                 if (configItr != requestDoc.MemberEnd() && configItr->value.IsObject())
                 {
-                    //HandleSetConfig(configItr->value.GetObjectA());
+                    // Since the new config is a subnode of this tree, we will 
+                    // just write it to a string.
+                    StringBuffer strBuf;
+                    Writer<StringBuffer> jsonWriter(strBuf);
+                    configItr->value.Accept(jsonWriter);
+
+                    // Now handle the new config.
+                    HandleSetConfig(strBuf.GetString(), strBuf.GetSize());
+
+                    // And set the success response.
+                    SetDocumentSuccess(responseDoc);
                 }
                 else
                 {
@@ -136,6 +146,12 @@ RawCommandResponse RapcomBase::OnRawCommand(const char* jsonString, size_t lengt
             else if (command == "GetConfig")
             {
                 HandleGetConfig(responseDoc);
+            }
+            else if (command == "Heartbeat")
+            {
+                // Add our current IP to the message.
+                responseDoc.AddMember("LocalIp", "10.124.131.157", responseDoc.GetAllocator());
+                SetDocumentSuccess(responseDoc);
             }
             else
             {
@@ -181,11 +197,25 @@ void RapcomBase::SetDocumentSuccess(Document& document)
 
 void RapcomBase::HandleGetConfig(rapidjson::Document& response)
 {
-    // Copy the config
+    // Copy the config to the response
     response.CopyFrom(m_currentConfig, response.GetAllocator());
 }
 
-void RapcomBase::HandleSetConfig(rapidjson::Document& request)
+void RapcomBase::HandleSetConfig(const char* json, size_t length)
 {
+    // Copy the old config
+    rapidjson::Document oldConfig;
+    oldConfig.CopyFrom(m_currentConfig, oldConfig.GetAllocator());
 
+    // Parse the new config
+    m_currentConfig.Parse(json, length);
+
+    // Save the new config
+    SaveConfig();
+
+    // Fire the event listener if we have one.
+    if (auto listener = m_listener.lock())
+    {
+        listener->OnConfigChange(oldConfig, m_currentConfig);
+    }
 }

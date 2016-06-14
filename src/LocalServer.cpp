@@ -119,7 +119,7 @@ void LocalServer::HandleWebCall(struct mg_connection *nc, int ev, void *ev_data)
         else 
         {
             // Redirect to the public website.
-            mg_printf(nc, "%s", "HTTP/1.1 301 Moved Permanently\r\nLocation: http://prism.quinndamerell.com/\r\nContent - Type : text / html\r\nContent - Length : 0\r\n\r\n");           
+            mg_printf(nc, "%s", "HTTP/1.1 301 Moved Permanently\r\nLocation: http://prism.quinndamerell.com/\r\nContent-Type:text/html\r\nContent-Length:0\r\n\r\n");           
         }
         break;
     default:

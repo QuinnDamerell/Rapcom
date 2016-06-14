@@ -123,7 +123,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\PollServer.cpp" />
-    <ClCompile Include="src\Rapcom.cpp" />
+    <ClCompile Include="src\RapcomBase.cpp" />
     <ClCompile Include="src\ThreadedObject.cpp" />
     <ClCompile Include="src\LocalServer.cpp" />
   </ItemGroup>

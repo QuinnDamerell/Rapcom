@@ -61,7 +61,7 @@ namespace Rapcom
         void HandleGetConfig(rapidjson::Document& response);
 
         // Sets the config
-        void HandleSetConfig(rapidjson::Document& request);
+        void HandleSetConfig(const char* json, size_t length);
     };
 
     static double GetDoubleOrDefault(rapidjson::Document& document, std::string name, double defaultValue)
@@ -79,5 +79,39 @@ namespace Rapcom
             }
         }
         return defaultValue;
+    }
+
+    enum class ConfigChangeType
+    {
+        Added,
+        Removed,
+        Updated,
+        None
+    };
+
+    static ConfigChangeType CheckConfigChange(rapidjson::Document& orgDoc, rapidjson::Document& newDoc, std::string name)
+    {
+        // Find it in the org
+        auto orgIter = orgDoc.FindMember(name.c_str());
+        if (orgIter == orgDoc.MemberEnd())
+        {
+            return ConfigChangeType::Added;
+        }
+
+        // Find it in the new
+        auto newIter = newDoc.FindMember(name.c_str());
+        if (newIter == newDoc.MemberEnd())
+        {
+            return ConfigChangeType::Removed;
+        }
+
+        if (newIter->value.GetType() != orgIter->value.GetType())
+        {
+            return ConfigChangeType::Updated;
+        }
+
+        // Todo, compare the actual types.
+
+        return ConfigChangeType::None;
     }
 }

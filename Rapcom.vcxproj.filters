@@ -38,9 +38,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Rapcom.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="src\ThreadedObject.cpp">
       <Filter>src</Filter>
     </ClCompile>
@@ -48,6 +45,9 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\PollServer.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\RapcomBase.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
