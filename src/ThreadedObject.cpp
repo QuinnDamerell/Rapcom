@@ -47,4 +47,7 @@ void ThreadedObject::ThreadLoop()
             break;
         }  
     }
+
+    // Remove the ref
+    m_selfRef = nullptr;
 }

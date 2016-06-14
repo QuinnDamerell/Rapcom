@@ -6,18 +6,19 @@
 using namespace Rapcom;
 using namespace rapidjson;
 
-// Used to reference web servers.
-static LocalServerWeakPtr s_webServer;
+// Used to reference the local server.
+static LocalServerWeakPtr s_localServer;
 
+// Callback from mongoose
 void static event_hander(struct mg_connection *nc, int ev, void *ev_data)
 {
-    LocalServerPtr commandHandler = s_webServer.lock();
+    LocalServerPtr commandHandler = s_localServer.lock();
     if (commandHandler)
     {
         commandHandler->HandleWebCall(nc, ev, ev_data);
     }    
 }
-    
+
 LocalServer::~LocalServer()
 {
     // Uninit
@@ -65,7 +66,7 @@ void LocalServer::Setup()
     mg_set_protocol_http_websocket(m_connection);
 
     // Set ourself as the static web server.
-    s_webServer = GetWeakPtr<LocalServer>();
+    s_localServer = GetWeakPtr<LocalServer>();
 }
 
 void LocalServer::Start()

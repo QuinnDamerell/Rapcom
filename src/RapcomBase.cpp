@@ -2,6 +2,12 @@
 #include <fstream>
 #include <string>
 
+#include <cstdio>
+#include <iostream>
+#include <memory>
+#include <stdexcept>
+#include <string>
+
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
 
@@ -46,6 +52,9 @@ RapcomBase::RapcomBase(std::string channelName, IRapcomListenerWeakPtr listener)
     {
         m_currentConfig.SetObject();
     }
+
+    // Set the dns to the system's dns if possible.
+    SetSystemDns();
 }
 
 Document& RapcomBase::GetConfig()
@@ -141,14 +150,16 @@ RawCommandResponse RapcomBase::OnRawCommand(const char* jsonString, size_t lengt
                     SetDocumentError(responseDoc, "Failed to find new config");
                 }
             }
+            // Handle get config
             else if (command == "GetConfig")
             {
                 HandleGetConfig(responseDoc);
             }
+            // Handle heartbeats
             else if (command == "Heartbeat")
             {
                 // Add our current IP to the message.
-                responseDoc.AddMember("LocalIp", "10.124.131.157", responseDoc.GetAllocator());
+                responseDoc.AddMember("LocalIp", Value(GetLocalIp().c_str(), responseDoc.GetAllocator()), responseDoc.GetAllocator());
                 SetDocumentSuccess(responseDoc);
             }
             else
@@ -216,4 +227,112 @@ void RapcomBase::HandleSetConfig(const char* json, size_t length)
     {
         listener->OnConfigChange(oldConfig, m_currentConfig);
     }
+}
+
+void RapcomBase::SetSystemDns()
+{
+    // For mongoose we need to overwrite the default DNS (8.8.8.8) because sometimes we can't connect
+    // to it if behind a firewall. If we can, we will try to get the system dns and use it.
+
+#ifdef _MSC_VER
+    // This is really bad, but the quickest way I would find to get the dns server
+    // of a windows box was to run ipconfig and parse it. If you can find better let me know.    
+    char lineBuffer[2000];
+    // Try to run the command
+    std::shared_ptr<FILE> pipe(_popen("ipconfig -all", "r"), _pclose);
+    if (pipe)
+    {
+        // Run through the output
+        while (!feof(pipe.get()))
+        {
+            if (fgets(lineBuffer, 2000, pipe.get()) != NULL)
+            {
+                if (strncmp(lineBuffer, "   DNS Servers", 14) == 0)
+                {
+                    // We found it!
+
+                    // Parse out the IP.
+                    int bufferSize = strlen(lineBuffer);
+                    int start = 0;
+                    while (start < bufferSize && lineBuffer[start] != ':')
+                    {
+                        start++;
+                    }
+
+                    // Add 2 to account for the ': '
+                    start += 2;
+
+                    if (start < bufferSize)
+                    {
+                        // Find the end
+                        int end = start;
+                        while (end < bufferSize && lineBuffer[end] != '\n')
+                        {
+                            end++;
+                        }
+
+                        // Now trim the string
+                        char *dnsIp = lineBuffer + start;
+                        dnsIp[(end - start)] = '\0';
+
+                        // Create a new buffer for the string and set the new IP.
+                        mg_set_dns_server(dnsIp, end - start);         
+
+                        // We are done.
+                        break;
+                    }
+                }
+            }
+        }
+    }
+#endif
+}
+
+std::string RapcomBase::GetLocalIp()
+{
+    std::string localIp = "";
+
+#ifdef  _MSC_VER  
+
+    ADDRINFOW   info = { 0 };
+    PADDRINFOW  more = { 0 };
+    info.ai_family = AF_UNSPEC;
+    info.ai_socktype = SOCK_STREAM;
+    info.ai_protocol = IPPROTO_TCP;
+
+    // Get the host name.    
+    WCHAR hostname[500];
+    if (GetHostNameW(hostname, sizeof(hostname)) != 0)
+    {
+        return localIp;
+    }
+
+    // Get the info
+    if (GetAddrInfoW(hostname, NULL, &info, &more) != 0)
+    {
+        return localIp;
+    }
+
+    // Find the ip
+    char ipstringbuffer[46];
+    DWORD ipbufferlength = 46;
+    LPSOCKADDR sockaddr_ip;
+    ADDRINFOW *ptr = NULL;
+    for (ptr = more; ptr != NULL; ptr = ptr->ai_next) 
+    {
+        switch (ptr->ai_family) 
+        {
+        case AF_INET:
+            sockaddr_ip = (LPSOCKADDR)ptr->ai_addr;
+            ipbufferlength = 46;
+            if (WSAAddressToString(sockaddr_ip, (DWORD)ptr->ai_addrlen, NULL, ipstringbuffer, &ipbufferlength) == 0)
+            {
+                localIp.assign(ipstringbuffer);
+                break;
+            }
+        }
+    }
+#endif
+
+    return localIp;
 }
