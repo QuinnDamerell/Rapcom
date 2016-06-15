@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "Common.h"
+#include "internal/Common.h"
 
 #include "internal/LocalServer.h"
 #include "internal/PollServer.h"
@@ -62,6 +62,12 @@ namespace Rapcom
 
         // Sets the config
         void HandleSetConfig(const char* json, size_t length);
+
+        // Sets the dns of mongoose to the system if possible
+        void SetSystemDns();
+
+        // Gets the local IP
+        std::string GetLocalIp();
     };
 
     static double GetDoubleOrDefault(rapidjson::Document& document, std::string name, double defaultValue)

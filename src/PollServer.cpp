@@ -9,9 +9,10 @@
 using namespace Rapcom;
 using namespace rapidjson;
 
-// Used to reference web servers.
+// Used to reference the poll server.
 static PollServerWeakPtr s_pollServer;
 
+// Callback from mongoose, send it to our poll server
 void static event_hander(struct mg_connection *nc, int ev, void *ev_data)
 {
     PollServerPtr commandHandler = s_pollServer.lock();
@@ -65,15 +66,10 @@ bool PollServer::DoThreadWork()
             m_nextAction = NextAction::WaitingOnPollRequest;
             break;
         case PollServer::NextAction::MakeResponseRequest:
-            // Build the response url
-            std::string responseUrl = "http://relay.quinndamerell.com/Blob.php?key=" + m_channelName + "_resp" + m_response.responseCode;
-            
-            // Make the post data
+            // Build the post request and make the request
+            std::string responseUrl = "http://relay.quinndamerell.com/Blob.php?key=" + m_channelName + "_resp" + m_response.responseCode;          
             std::string postData = "data=" + m_response.jsonResponse;
-
-            // Make the request
             mg_connect_http(&m_eventManager, event_hander, responseUrl.c_str(), "Content-Type: application/x-www-form-urlencoded\r\n", postData.c_str());
-
             m_nextAction = NextAction::WaitOnResponseRequest;
             break;
         }        

@@ -12,9 +12,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="inc\Common.h">
-      <Filter>inc</Filter>
-    </ClInclude>
     <ClInclude Include="inc\IRapcomListener.h">
       <Filter>inc</Filter>
     </ClInclude>
@@ -34,6 +31,9 @@
       <Filter>inc\internal</Filter>
     </ClInclude>
     <ClInclude Include="inc\internal\ThreadedObject.h">
+      <Filter>inc\internal</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\internal\Common.h">
       <Filter>inc\internal</Filter>
     </ClInclude>
   </ItemGroup>

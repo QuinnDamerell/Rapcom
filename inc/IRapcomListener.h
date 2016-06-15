@@ -4,7 +4,7 @@
 
 #include "rapidjson/document.h"
 
-#include "Common.h"
+#include "internal/Common.h"
 
 namespace Rapcom
 {
