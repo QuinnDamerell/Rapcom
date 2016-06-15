@@ -93,7 +93,8 @@ function Rapcom_Heartbeat(connectionObject)
     else if(!connectionObject.IsConnectedLocally)
     {
         // If we have a local ip, try to connect locally.
-        if(connectionObject.LocalIp != null && connectionObject.LocalIp.length > 0 && connectionObject.LocalPort != 0)
+        if(connectionObject.LocalIp != null && connectionObject.LocalIp.length > 0 && 
+           connectionObject.LocalPort != null && connectionObject.LocalPort.length > 0)
         {
             // Try to connect locally
             connectionObject.SendCommand("Heartbeat", true, null, null, null, null, true)

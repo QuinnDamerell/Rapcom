@@ -52,7 +52,7 @@ std::string LocalServer::Setup()
             m_connection = nullptr;
             mg_mgr_free(&m_eventManager);
             m_isInited = false;
-            return;
+            return boundPort;
         }
         else
         {
