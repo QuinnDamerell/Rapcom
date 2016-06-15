@@ -1,3 +1,5 @@
+#include "RapcomBase.h"
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -8,10 +10,19 @@
 #include <stdexcept>
 #include <string>
 
+#ifndef PLATFORM_WINDOWS
+#include <stdio.h>      
+#include <sys/types.h>
+#include <ifaddrs.h>
+#include <netinet/in.h> 
+#include <string.h> 
+#include <arpa/inet.h>
+#endif
+
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
 
-#include "RapcomBase.h"
+
 
 using namespace std;
 using namespace rapidjson;
@@ -235,7 +246,7 @@ void RapcomBase::SetSystemDns()
     // For mongoose we need to overwrite the default DNS (8.8.8.8) because sometimes we can't connect
     // to it if behind a firewall. If we can, we will try to get the system dns and use it.
 
-#ifdef _MSC_VER
+#ifdef PLATFORM_WINDOWS
     // This is really bad, but the quickest way I would find to get the dns server
     // of a windows box was to run ipconfig and parse it. If you can find better let me know.    
     char lineBuffer[2000];
@@ -293,7 +304,7 @@ std::string RapcomBase::GetLocalIp()
 {
     std::string localIp = "";
 
-#ifdef  _MSC_VER  
+#ifdef  PLATFORM_WINDOWS 
 
     ADDRINFOW   info = { 0 };
     PADDRINFOW  more = { 0 };
@@ -333,6 +344,36 @@ std::string RapcomBase::GetLocalIp()
             }
         }
     }
+#else
+
+    struct ifaddrs* ifAddrStruct = NULL;
+    struct ifaddrs* ifa = NULL;
+    void* tmpAddrPtr = NULL;
+
+    if (getifaddrs(&ifAddrStruct) != 0)
+    {
+        return localIp;
+    }
+
+    for (ifa = ifAddrStruct; ifa != NULL; ifa = ifa->ifa_next)
+    {
+        if (!ifa->ifa_addr)
+        {
+            continue;
+        }
+        if (ifa->ifa_addr->sa_family == AF_INET && strcmp(ifa->ifa_name, "lo") != 0)
+        {
+            tmpAddrPtr = &((struct sockaddr_in *)ifa->ifa_addr)->sin_addr;
+            char addressBuffer[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, tmpAddrPtr, addressBuffer, INET_ADDRSTRLEN);            
+            localIp.assign(addressBuffer, INET_ADDRSTRLEN);
+        }
+    }
+    if (ifAddrStruct != NULL)
+    {
+        freeifaddrs(ifAddrStruct);
+    }
+
 #endif
 
     return localIp;
