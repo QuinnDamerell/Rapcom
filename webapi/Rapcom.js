@@ -20,9 +20,9 @@
 //          InternalDisconnected() - Called when we get disconnected
 //      
 //     Callbacks
-//          OnConnecting() - Fired when we are trying to connect
+//          OnConnecting(bool isLocal) - Fired when we are trying to connect
 //          OnConnected(bool isLocal) - Fired when we are connected
-//          OnDisconnected(bool isStillConnectedOverInternet) - Fired when we lose the connection.
+//          OnDisconnected(bool isLocal) - Fired when we lose the connection.
 
 function CreateRapcomConnection(channelName)
 {
@@ -46,7 +46,7 @@ function CreateRapcomConnection(channelName)
     };
 
     // Start a heartbeat for this connection
-    connectionObject.HeartbeatObj = setInterval(Rapcom_Heartbeat, 5000, connectionObject);
+    connectionObject.HeartbeatObj = setInterval(Rapcom_Heartbeat, 8000, connectionObject);
 
     // Kick off a connection now
     Rapcom_Heartbeat(connectionObject);
@@ -65,7 +65,7 @@ function Rapcom_Heartbeat(connectionObject)
         // Fire we are trying to connect
         if(connectionObject.OnConnecting != null)
         {
-            connectionObject.OnConnecting();
+            connectionObject.OnConnecting(false);
         }
         
         // Try to send a heartbeat to the server.
@@ -96,6 +96,12 @@ function Rapcom_Heartbeat(connectionObject)
         if(connectionObject.LocalIp != null && connectionObject.LocalIp.length > 0 && 
            connectionObject.LocalPort != null && connectionObject.LocalPort.length > 0)
         {
+            // Fire we are trying to connect locally
+            if(connectionObject.OnConnecting != null)
+            {
+                connectionObject.OnConnecting(true);
+            }
+
             // Try to connect locally
             connectionObject.SendCommand("Heartbeat", true, null, null, null, null, true)
             .complete = function(wasSuccess, jsonResponse)
