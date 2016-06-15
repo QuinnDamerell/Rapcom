@@ -51,6 +51,9 @@ namespace Rapcom
         // The poll server
         PollServerPtr m_pollServer;
 
+        // The port our local server is bound to.
+        std::string m_boundPort;
+
         // Sets an error to the document
         void SetDocumentError(rapidjson::Document& document, std::string errorText);
 

@@ -96,7 +96,7 @@ void RapcomBase::Start()
     // Make the local server
     m_localServer = std::make_shared<LocalServer>(GetSharedPtr<IRawCommandHandler>());
     // Setup and start
-    m_localServer->Setup();
+    m_boundPort = m_localServer->Setup();
     m_localServer->Start();
 
     // Make the poll server
@@ -171,7 +171,7 @@ RawCommandResponse RapcomBase::OnRawCommand(const char* jsonString, size_t lengt
             {
                 // Add our current IP to the message.
                 responseDoc.AddMember("LocalIp", Value(GetLocalIp().c_str(), responseDoc.GetAllocator()), responseDoc.GetAllocator());
-                responseDoc.AddMember("LocalPort", 80, responseDoc.GetAllocator());
+                responseDoc.AddMember("LocalPort", Value(m_boundPort.c_str(), responseDoc.GetAllocator()), responseDoc.GetAllocator());
                 SetDocumentSuccess(responseDoc);
             }
             else

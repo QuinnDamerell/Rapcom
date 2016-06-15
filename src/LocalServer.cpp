@@ -28,7 +28,7 @@ LocalServer::~LocalServer()
     }
 }
 
-void LocalServer::Setup()
+std::string LocalServer::Setup()
 {
     // Init the event manager
     mg_mgr_init(&m_eventManager, NULL);
@@ -37,15 +37,18 @@ void LocalServer::Setup()
     static const char *root = "c:/";
     m_http_server_opts.document_root = root;
 
+    // The port we bound to
+    std::string boundPort = "";
+
     // Bind
     m_connection = mg_bind(&m_eventManager, m_http_port, event_hander);
     if (m_connection == nullptr)
     {
-        std::cout << "Failed to bind port 80, trying 3008\r\n";
+        std::cout << "Failed to bind port " << m_http_port << ", trying " << m_http_port_backup << std::endl;
         m_connection = mg_bind(&m_eventManager, m_http_port_backup, event_hander);
         if (m_connection == nullptr)
         {
-            std::cout << "Failed to bind port 3008, killing the webserver\r\n";
+            std::cout << "Failed to bind port " << m_http_port_backup << ", killing the local server" << std::endl;
             m_connection = nullptr;
             mg_mgr_free(&m_eventManager);
             m_isInited = false;
@@ -53,13 +56,14 @@ void LocalServer::Setup()
         }
         else
         {
-            std::cout << "Web server started on port 3008\r\n";
+            std::cout << "Local server started on port " << m_http_port_backup << std::endl;
+            boundPort.assign(m_http_port_backup);
         }
     }
     else
     {
-        std::cout << "Web server started on port 80\r\n";
-
+        std::cout << "Local server started on port " << m_http_port << std::endl;
+        boundPort.assign(m_http_port);
     }
 
     // Finish the setup
@@ -67,6 +71,8 @@ void LocalServer::Setup()
 
     // Set ourself as the static web server.
     s_localServer = GetWeakPtr<LocalServer>();
+
+    return boundPort;
 }
 
 void LocalServer::Start()

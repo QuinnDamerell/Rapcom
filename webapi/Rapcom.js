@@ -246,7 +246,7 @@ function Rapcom_SendCommand_Local(connectionObject, message)
   
     // Send the command, note we want to time out after 500ms to ensure the connect stays up. 
     // If we lose this we will fall back to the web.
-    $.post({url:"http://localhost/api/v1/command", data:JSON.stringify(message), timeout:1000})
+    $.post({url:"http://" + connectionObject.LocalIp + ":" + connectionObject.LocalPort + "/api/v1/command", data:JSON.stringify(message), timeout:1000})
     .done(function(data)
     {
         var response = JSON.parse(data);

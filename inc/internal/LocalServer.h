@@ -27,7 +27,7 @@ namespace Rapcom
         ~LocalServer();
 
         // Sets up the web server
-        void Setup();
+        std::string Setup();
 
         // Starts it
         void Start();
@@ -41,7 +41,7 @@ namespace Rapcom
     private:
         // The port we will try to bind.
         const char* m_http_port = "80";
-        const char* m_http_port_backup = "3008";
+        const char* m_http_port_backup = "8356";
 
         // Our current server options
         struct mg_serve_http_opts m_http_server_opts;
