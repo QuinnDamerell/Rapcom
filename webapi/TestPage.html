@@ -58,11 +58,17 @@
                 };
 
                 // Setup a handler for disconnected
-                rapcomConnection.OnDisconnected = function()
+                rapcomConnection.OnDisconnected = function(isStillConnectedOverInternet)
                 {
-                    $("#statusBlock").html("Disconnected");
+                    if(isStillConnectedOverInternet)
+                    {
+                        $("#statusBlock").html("Disconnected Locally - Still Connected Over Internet");
+                    }
+                    else
+                    {
+                        $("#statusBlock").html("Disconnected");
+                    }                   
                 };  
-
                 return false;
             });     
 

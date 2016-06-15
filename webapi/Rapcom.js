@@ -22,7 +22,7 @@
 //     Callbacks
 //          OnConnecting() - Fired when we are trying to connect
 //          OnConnected(bool isLocal) - Fired when we are connected
-//          OnDisconnected() - Fired when we lose the connection.
+//          OnDisconnected(bool isStillConnectedOverInternet) - Fired when we lose the connection.
 
 function CreateRapcomConnection(channelName)
 {
@@ -120,17 +120,22 @@ function Rapcom_InternalDisconnected()
     var wasConnected = this.IsConnected;
     this.IsConnected = false;
     this.LocalIp = null;
-
+    this.LocalPort = null;
     if(wasConnected && this.OnDisconnected != null)
     {
-        this.OnDisconnected();
+        this.OnDisconnected(false);
     }
 }
 
 // Called when we lose our local connection.
 function Rapcom_InternalDisconnected_Local()
 {
+    var wasConnected = this.IsConnectedLocally;
     this.IsConnectedLocally = false;
+    if(wasConnected && this.OnDisconnected != null)
+    {
+        this.OnDisconnected(true);
+    }
 }
 
 // Called externally to stop the connection.
