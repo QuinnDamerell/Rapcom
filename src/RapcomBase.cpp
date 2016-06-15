@@ -160,6 +160,7 @@ RawCommandResponse RapcomBase::OnRawCommand(const char* jsonString, size_t lengt
             {
                 // Add our current IP to the message.
                 responseDoc.AddMember("LocalIp", Value(GetLocalIp().c_str(), responseDoc.GetAllocator()), responseDoc.GetAllocator());
+                responseDoc.AddMember("LocalPort", 80, responseDoc.GetAllocator());
                 SetDocumentSuccess(responseDoc);
             }
             else

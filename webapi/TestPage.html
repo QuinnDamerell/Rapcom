@@ -27,9 +27,17 @@
                 };
 
                 // Setup a handler for on connected
-                rapcomConnection.OnConnected = function()
+                rapcomConnection.OnConnected = function(isLocal)
                 {
-                    $("#statusBlock").html("Connected");
+                    if(isLocal)
+                    {
+                        $("#statusBlock").html("Connected Locally");
+                    }
+                    else
+                    {
+                        $("#statusBlock").html("Connected");
+                    }
+                    
                     $("#configBlock").html("Retrieving...");                    
 
                     // Get the config when we are connected
