@@ -25,7 +25,7 @@ namespace Rapcom
             m_channelName(channelName)
         {
             // Set the poll address
-            m_pollAddress = "http://relay.quinndamerell.com/LongPoll.php?key=" + channelName + "Poll&clearValue={}";
+            m_pollAddress = "http://relay.quinndamerell.com/LongPoll.php?key=" + channelName + "Poll&clearValue=&expectingValue=";
         };
 
         ~PollServer();

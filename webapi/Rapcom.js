@@ -85,10 +85,11 @@ function Rapcom_Heartbeat(connectionObject)
 // Called internally when we detect a problem.
 function Rapcom_InternalDisconnected()
 {
+    var wasConnected = this.IsConnected;
     this.IsConnected = false;
     this.LocalIp = null;
 
-    if(this.OnDisconnected != null)
+    if(wasConnected && this.OnDisconnected != null)
     {
         this.OnDisconnected();
     }
@@ -110,67 +111,27 @@ function Rapcom_SendCommand(command, waitForResponse, value1, value2, value3, va
     // Used to give a callback when the message is sent
     var returnObj = { complete : null};
 
-    // Marked when we return data to ensure we don't don't callback more than once.
-    var returnedUserResponse = false;
+    // Get our connection object
     var connectionObject = this;
 
-    // If we are expecting a response we need to setup a poll first so we make sure to
-    // get the response.
+    // This is used to make sure we don't respond back many times
+    var hasCalledbackToUser = false;
+
+    // If we are expecting a response generate a response code
     if(waitForResponse)
     {
         // Generate a reponse code
         message.ResponseCode = Math.floor(Math.random() * 100000000000000);
-
-        // Make the long poll for the reuest.
-        $.get("http://relay.quinndamerell.com/LongPoll.php?clearValue={}&key=" + this.ChannelName + "_resp" + message.ResponseCode)
-        .done(function(data)
-        {
-            // We got a response
-            var response = JSON.parse(data);
-            if(response.Status == "NewData")
-            {
-                // We got a response, send it!
-                response = JSON.parse(decodeURIComponent(response.Data));
-                if(returnObj.complete != null)
-                {
-                    returnObj.complete(true, response);
-                }
-            }
-            else
-            {
-                // We timed out, assume we disconnected
-                connectionObject.InternalDisconnected();
-                if(returnObj.complete != null)
-                {
-                    returnObj.complete(false, {"Status":"Disconnected"});
-                }  
-            }            
-        })
-        .fail(function(data) 
-        {
-            // Connection failed
-            connectionObject.InternalDisconnected();
-
-            if(!returnedUserResponse)
-            {
-                returnedUserResponse = true;
-                if(returnObj.complete != null)
-                {
-                    returnObj.complete(false, data);
-                }       
-            }
-        });
     }
     
     // Send the command
     //var postObj =  $.post("http://localhost/api/v1/command", JSON.stringify(json));
-    $.post("http://relay.quinndamerell.com/Blob.php?key=" + this.ChannelName + "Poll&data=" + encodeURIComponent(JSON.stringify(message)))
+    $.post("http://relay.quinndamerell.com/Blob.php?key=" + connectionObject.ChannelName + "Poll&data=" + encodeURIComponent(JSON.stringify(message)))
     .done(function(data)
     {
         // If we aren't waiting on a response, return the body now.
         if(!waitForResponse)
         {
-            returnedUserResponse = true;
             if(returnObj.complete != null)
             {
                 returnObj.complete(true, data);
@@ -179,18 +140,58 @@ function Rapcom_SendCommand(command, waitForResponse, value1, value2, value3, va
     })
     .fail(function(data) 
     {
-        if(!returnedUserResponse)
+        // Connection failed
+        connectionObject.InternalDisconnected();
+
+        if(!hasCalledbackToUser && returnObj.complete != null)
         {
-            returnedUserResponse = true;
-            if(returnObj.complete != null)
+            hasCalledbackToUser = true;
+            returnObj.complete(false, data);
+        }           
+    });
+
+    // Now if we want to wait for a response make a request.
+    if(waitForResponse)
+    {
+        // Make the long poll for the reuest.
+        $.get("http://relay.quinndamerell.com/LongPoll.php?expectingValue=clearValue=&key=" + connectionObject.ChannelName + "_resp" + message.ResponseCode)
+        .done(function(data)
+        {
+            // We got a response
+            var response = JSON.parse(data);
+            if(response.Status == "NewData")
             {
+                // We got a response, send it!
+                response = JSON.parse(decodeURIComponent(response.Data));
+                if(!hasCalledbackToUser && returnObj.complete != null)
+                {
+                    hasCalledbackToUser = true;
+                    returnObj.complete(true, response);
+                }
+            }
+            else
+            {
+                // We timed out, assume we disconnected
+                connectionObject.InternalDisconnected();
+                if(!hasCalledbackToUser && returnObj.complete != null)
+                {
+                    hasCalledbackToUser = true;
+                    returnObj.complete(false, {"Status":"Disconnected"});
+                }  
+            }     
+        })
+        .fail(function(data) 
+        {
+            // Connection failed
+            connectionObject.InternalDisconnected();
+                
+            if(!hasCalledbackToUser && returnObj.complete != null)
+            {
+                hasCalledbackToUser = true;
                 returnObj.complete(false, data);
             }  
-        }    
-
-        // Set disconnected
-        connectionObject.InternalDisconnected();
-    });
+        });
+    }
 
     return returnObj;
 }
