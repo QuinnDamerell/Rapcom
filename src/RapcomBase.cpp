@@ -288,7 +288,58 @@ void RapcomBase::SetSystemDns()
                         dnsIp[(end - start)] = '\0';
 
                         // Create a new buffer for the string and set the new IP.
-                        mg_set_dns_server(dnsIp, end - start);         
+                        mg_set_dns_server(dnsIp, end - start);  
+                        std::cout << "Setting DNS to be " << dnsIp << std::endl;
+
+                        // We are done.
+                        break;
+                    }
+                }
+            }
+        }
+    }
+#else
+    char lineBuffer[512];
+    // Try to run the command
+    std::shared_ptr<FILE> pipe(popen("cat /etc/resolv.conf", "r"), pclose);
+    if (pipe)
+    {
+        // Run through the output
+        while (!feof(pipe.get()))
+        {
+            if (fgets(lineBuffer, 512, pipe.get()) != NULL)
+            {
+                if (strncmp(lineBuffer, "nameserver", 10) == 0)
+                {
+                    // We found it!
+
+                    // Parse out the IP.
+                    int bufferSize = strlen(lineBuffer);
+                    int start = 0;
+                    while (start < bufferSize && lineBuffer[start] != ' ')
+                    {
+                        start++;
+                    }
+
+                    // Add 2 to account for the ' '
+                    start += 1;
+
+                    if (start < bufferSize)
+                    {
+                        // Find the end
+                        int end = start;
+                        while (end < bufferSize && lineBuffer[end] != '\n')
+                        {
+                            end++;
+                        }
+
+                        // Now trim the string
+                        char *dnsIp = lineBuffer + start;
+                        dnsIp[(end - start)] = '\0';
+
+                        // Create a new buffer for the string and set the new IP.
+                        mg_set_dns_server(dnsIp, end - start);
+                        std::cout << "Setting DNS to be " << dnsIp << std::endl;
 
                         // We are done.
                         break;
