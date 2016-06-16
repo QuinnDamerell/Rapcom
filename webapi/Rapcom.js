@@ -46,7 +46,7 @@ function CreateRapcomConnection(channelName)
     };
 
     // Start a heartbeat for this connection
-    connectionObject.HeartbeatObj = setInterval(Rapcom_Heartbeat, 8000, connectionObject);
+    connectionObject.HeartbeatObj = setInterval(Rapcom_Heartbeat, 8000, connectionObject, false);
 
     // Kick off a connection now
     Rapcom_Heartbeat(connectionObject);
@@ -57,16 +57,13 @@ function CreateRapcomConnection(channelName)
 
 // Main heartbeat for the object, this should ensure we are connected and try to connect locally
 // if possible.
-function Rapcom_Heartbeat(connectionObject)
+function Rapcom_Heartbeat(connectionObject, forceLocalAttempt)
 {
-    // Only do work if we aren't connected.
-    if(!connectionObject.IsConnected)
+    // Only make the heartbeat is we aren't connected locally.
+    if(!connectionObject.IsConnectedLocally && !forceLocalAttempt)
     {
         // Fire we are trying to connect
-        if(connectionObject.OnConnecting != null)
-        {
-            connectionObject.OnConnecting(false);
-        }
+        Rapcom_InternalOnConnecting(connectionObject, false);
         
         // Try to send a heartbeat to the server.
         connectionObject.SendCommand("Heartbeat", true)
@@ -75,32 +72,23 @@ function Rapcom_Heartbeat(connectionObject)
                 if(wasSuccess)
                 {
                     // We are connected!
-                    connectionObject.IsConnected = true;
                     connectionObject.LocalIp = jsonResponse.LocalIp;
                     connectionObject.LocalPort = jsonResponse.LocalPort;
+                    Rapcom_InternalOnConnected(connectionObject, false); 
 
-                    if(connectionObject.OnConnected != null)
-                    {
-                        connectionObject.OnConnected(false);
-                    }  
-
-                    // Call us again so we try to connect locally.
-                    Rapcom_Heartbeat(connectionObject);
+                    // Try to force a local connection.
+                    Rapcom_Heartbeat(connectionObject, true);
                 }             
             };
     }
-    // If we are connected try to connect locally
-    else if(!connectionObject.IsConnectedLocally)
+    else
     {
-        // If we have a local ip, try to connect locally.
+        // If we are connected locally heartbeat it if we have a ip and port.
         if(connectionObject.LocalIp != null && connectionObject.LocalIp.length > 0 && 
            connectionObject.LocalPort != null && connectionObject.LocalPort.length > 0)
         {
             // Fire we are trying to connect locally
-            if(connectionObject.OnConnecting != null)
-            {
-                connectionObject.OnConnecting(true);
-            }
+            Rapcom_InternalOnConnecting(connectionObject, true);            
 
             // Try to connect locally
             connectionObject.SendCommand("Heartbeat", true, null, null, null, null, true)
@@ -109,11 +97,7 @@ function Rapcom_Heartbeat(connectionObject)
                 if(wasSuccess)
                 {
                     // We are connected!
-                    connectionObject.IsConnectedLocally = true;
-                    if(connectionObject.OnConnected != null)
-                    {
-                        connectionObject.OnConnected(true);
-                    } 
+                    Rapcom_InternalOnConnected(connectionObject, true);
                 }              
             };
         }
@@ -141,6 +125,44 @@ function Rapcom_InternalDisconnected_Local()
     if(wasConnected && this.OnDisconnected != null)
     {
         this.OnDisconnected(true);
+    }
+}
+
+// Called when we are trying to connect
+function Rapcom_InternalOnConnecting(connectionObject, isLocal)
+{
+    // If we are already connected don't fire it.
+    if((isLocal && connectionObject.IsConnectedLocally) ||
+        (!isLocal && connectionObject.IsConnected))
+    {
+        return;
+    }
+
+    // Fire we are trying to connect
+    if(connectionObject.OnConnecting != null)
+    {
+        connectionObject.OnConnecting(isLocal);
+    }
+}
+
+// Called when we are connected
+function Rapcom_InternalOnConnected(connectionObject, isLocal)
+{
+    // If we are already connected don't fire it.
+    if((isLocal && connectionObject.IsConnectedLocally) ||
+        (!isLocal && connectionObject.IsConnected))
+    {
+        return;
+    }
+
+    // Update the value
+    if(isLocal) connectionObject.IsConnectedLocally = true;
+    else connectionObject.IsConnected = true;
+
+    // Fire we are trying to connect
+    if(connectionObject.OnConnected != null)
+    {
+        connectionObject.OnConnected(isLocal);
     }
 }
 
