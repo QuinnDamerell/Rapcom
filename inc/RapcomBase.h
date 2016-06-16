@@ -113,6 +113,24 @@ namespace Rapcom
         return defaultValue;
     }
 
+    static void GetStringOrDefault(rapidjson::Document& document, std::string name, std::string defaultValue, std::string& output)
+    {
+        auto iter = document.FindMember(name.c_str());
+        if (iter != document.MemberEnd())
+        {
+            if (iter->value.IsString())
+            {
+                output.assign(iter->value.GetString(), iter->value.GetStringLength());
+                return;
+            }
+        }
+
+        // If not there, add it
+        document.AddMember(rapidjson::Value(name.c_str(), document.GetAllocator()), rapidjson::Value(defaultValue.c_str(), document.GetAllocator()), document.GetAllocator());
+        output = defaultValue;
+        return;
+    }
+
     enum class ConfigChangeType
     {
         Added,
