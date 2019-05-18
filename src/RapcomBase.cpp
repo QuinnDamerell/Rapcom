@@ -246,109 +246,109 @@ void RapcomBase::SetSystemDns()
     // For mongoose we need to overwrite the default DNS (8.8.8.8) because sometimes we can't connect
     // to it if behind a firewall. If we can, we will try to get the system dns and use it.
 
-#ifdef PLATFORM_WINDOWS
-    // This is really bad, but the quickest way I would find to get the dns server
-    // of a windows box was to run ipconfig and parse it. If you can find better let me know.    
-    char lineBuffer[2000];
-    // Try to run the command
-    std::shared_ptr<FILE> pipe(_popen("ipconfig -all", "r"), _pclose);
-    if (pipe)
-    {
-        // Run through the output
-        while (!feof(pipe.get()))
-        {
-            if (fgets(lineBuffer, 2000, pipe.get()) != NULL)
-            {
-                if (strncmp(lineBuffer, "   DNS Servers", 14) == 0)
-                {
-                    // We found it!
-
-                    // Parse out the IP.
-                    int bufferSize = strlen(lineBuffer);
-                    int start = 0;
-                    while (start < bufferSize && lineBuffer[start] != ':')
-                    {
-                        start++;
-                    }
-
-                    // Add 2 to account for the ': '
-                    start += 2;
-
-                    if (start < bufferSize)
-                    {
-                        // Find the end
-                        int end = start;
-                        while (end < bufferSize && lineBuffer[end] != '\n')
-                        {
-                            end++;
-                        }
-
-                        // Now trim the string
-                        char *dnsIp = lineBuffer + start;
-                        dnsIp[(end - start)] = '\0';
-
-                        // Create a new buffer for the string and set the new IP.
-                        mg_set_dns_server(dnsIp, end - start);  
-                        std::cout << "Setting DNS to be " << dnsIp << std::endl;
-
-                        // We are done.
-                        break;
-                    }
-                }
-            }
-        }
-    }
-#else
-    char lineBuffer[512];
-    // Try to run the command
-    std::shared_ptr<FILE> pipe(popen("cat /etc/resolv.conf", "r"), pclose);
-    if (pipe)
-    {
-        // Run through the output
-        while (!feof(pipe.get()))
-        {
-            if (fgets(lineBuffer, 512, pipe.get()) != NULL)
-            {
-                if (strncmp(lineBuffer, "nameserver", 10) == 0)
-                {
-                    // We found it!
-
-                    // Parse out the IP.
-                    int bufferSize = strlen(lineBuffer);
-                    int start = 0;
-                    while (start < bufferSize && lineBuffer[start] != ' ')
-                    {
-                        start++;
-                    }
-
-                    // Add 2 to account for the ' '
-                    start += 1;
-
-                    if (start < bufferSize)
-                    {
-                        // Find the end
-                        int end = start;
-                        while (end < bufferSize && lineBuffer[end] != '\n')
-                        {
-                            end++;
-                        }
-
-                        // Now trim the string
-                        char *dnsIp = lineBuffer + start;
-                        dnsIp[(end - start)] = '\0';
-
-                        // Create a new buffer for the string and set the new IP.
-                        mg_set_dns_server(dnsIp, end - start);
-                        std::cout << "Setting DNS to be " << dnsIp << std::endl;
-
-                        // We are done.
-                        break;
-                    }
-                }
-            }
-        }
-    }
-#endif
+//#ifdef PLATFORM_WINDOWS
+//    // This is really bad, but the quickest way I would find to get the dns server
+//    // of a windows box was to run ipconfig and parse it. If you can find better let me know.    
+//    char lineBuffer[2000];
+//    // Try to run the command
+//    std::shared_ptr<FILE> pipe(_popen("ipconfig -all", "r"), _pclose);
+//    if (pipe)
+//    {
+//        // Run through the output
+//        while (!feof(pipe.get()))
+//        {
+//            if (fgets(lineBuffer, 2000, pipe.get()) != NULL)
+//            {
+//                if (strncmp(lineBuffer, "   DNS Servers", 14) == 0)
+//                {
+//                    // We found it!
+//
+//                    // Parse out the IP.
+//                    int bufferSize = strlen(lineBuffer);
+//                    int start = 0;
+//                    while (start < bufferSize && lineBuffer[start] != ':')
+//                    {
+//                        start++;
+//                    }
+//
+//                    // Add 2 to account for the ': '
+//                    start += 2;
+//
+//                    if (start < bufferSize)
+//                    {
+//                        // Find the end
+//                        int end = start;
+//                        while (end < bufferSize && lineBuffer[end] != '\n')
+//                        {
+//                            end++;
+//                        }
+//
+//                        // Now trim the string
+//                        char *dnsIp = lineBuffer + start;
+//                        dnsIp[(end - start)] = '\0';
+//
+//                        // Create a new buffer for the string and set the new IP.
+//                        mg_set_dns_server(dnsIp, end - start);  
+//                        std::cout << "Setting DNS to be " << dnsIp << std::endl;
+//
+//                        // We are done.
+//                        break;
+//                    }
+//                }
+//            }
+//        }
+//    }
+//#else
+//    char lineBuffer[512];
+//    // Try to run the command
+//    std::shared_ptr<FILE> pipe(popen("cat /etc/resolv.conf", "r"), pclose);
+//    if (pipe)
+//    {
+//        // Run through the output
+//        while (!feof(pipe.get()))
+//        {
+//            if (fgets(lineBuffer, 512, pipe.get()) != NULL)
+//            {
+//                if (strncmp(lineBuffer, "nameserver", 10) == 0)
+//                {
+//                    // We found it!
+//
+//                    // Parse out the IP.
+//                    int bufferSize = strlen(lineBuffer);
+//                    int start = 0;
+//                    while (start < bufferSize && lineBuffer[start] != ' ')
+//                    {
+//                        start++;
+//                    }
+//
+//                    // Add 2 to account for the ' '
+//                    start += 1;
+//
+//                    if (start < bufferSize)
+//                    {
+//                        // Find the end
+//                        int end = start;
+//                        while (end < bufferSize && lineBuffer[end] != '\n')
+//                        {
+//                            end++;
+//                        }
+//
+//                        // Now trim the string
+//                        char *dnsIp = lineBuffer + start;
+//                        dnsIp[(end - start)] = '\0';
+//
+//                        // Create a new buffer for the string and set the new IP.
+//                        mg_set_dns_server(dnsIp, end - start);
+//                        std::cout << "Setting DNS to be " << dnsIp << std::endl;
+//
+//                        // We are done.
+//                        break;
+//                    }
+//                }
+//            }
+//        }
+//    }
+//#endif
 }
 
 std::string RapcomBase::GetLocalIp()
