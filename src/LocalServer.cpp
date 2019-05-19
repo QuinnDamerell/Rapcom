@@ -34,8 +34,8 @@ std::string LocalServer::Setup()
     mg_mgr_init(&m_eventManager, NULL);
     m_isInited = true;
 
-    static const char *root = "c:/";
-    m_http_server_opts.document_root = root;
+    //static const char *root = "c:/";
+    //m_http_server_opts.document_root = root;
 
     // The port we bound to
     std::string boundPort = "";
