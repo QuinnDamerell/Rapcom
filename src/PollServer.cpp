@@ -150,7 +150,7 @@ void PollServer::HandleWebCommand(const char* jsonStr, size_t length)
                             m_nextAction = NextAction::MakeResponseRequest;
                         }
                     }
-                    delete decodedString;
+                    delete[] decodedString;
                 }
                 else
                 {
