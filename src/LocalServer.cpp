@@ -95,6 +95,13 @@ bool LocalServer::DoThreadWork()
     return true;
 }
 
+void LocalServer::WriteJsonResponse(struct mg_connection* nc, std::string& json)
+{
+	size_t jsonSize = json.length();
+	const char* str = json.c_str();      
+	mg_printf(nc, "HTTP/1.1 200 OK\r\Content-Length:%d\r\nContent-Type:application/json\r\nAccess-Control-Allow-Origin:*\r\n\r\n%s", jsonSize, str);
+}
+
 void LocalServer::HandleWebCall(struct mg_connection *nc, int ev, void *ev_data)
 {
     struct http_message *hm = (struct http_message *) ev_data;
@@ -110,14 +117,14 @@ void LocalServer::HandleWebCall(struct mg_connection *nc, int ev, void *ev_data)
             {
                 response = handler->OnRawCommand(hm->body.p, hm->body.len);
             }
- 
-            // Send the headers            
-            mg_printf(nc, "%s", "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\nContent - Type: text / json\r\nAccess-Control-Allow-Origin: * \r\n\r\n");
 
-            // Send the result
-            mg_printf_http_chunk(nc, "%s", response.jsonResponse.c_str());
-            mg_send_http_chunk(nc, "", 0);
+			WriteJsonResponse(nc, response.jsonResponse);
         }
+		else if (mg_vcmp(&hm->uri, "/api/v1/ping") == 0)
+		{
+			std::string response("{\"Response\":\"Pong\"}");
+			WriteJsonResponse(nc, response);
+		}
         else if (mg_vcmp(&hm->uri, "/local") == 0)
         {
             /* Serve static content */

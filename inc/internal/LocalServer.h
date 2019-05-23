@@ -2,6 +2,8 @@
 
 #include "Common.h"
 
+#include <string>
+
 #include "mongoose.h"
 #include "internal/ThreadedObject.h"
 #include "internal/SharedFromThisHelper.h"
@@ -39,6 +41,9 @@ namespace Rapcom
         void HandleWebCall(struct mg_connection *nc, int ev, void *ev_data);
 
     private:
+
+		void WriteJsonResponse(struct mg_connection* nc, std::string& json);
+
         // The port we will try to bind.
         const char* m_http_port = "80";
         const char* m_http_port_backup = "8356";

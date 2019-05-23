@@ -48,8 +48,8 @@ function CreateRapcomConnection(channelName)
     // Start a heartbeat for this connection
     connectionObject.HeartbeatObj = setInterval(Rapcom_Heartbeat, 8000, connectionObject, false);
 
-    // Kick off a connection now
-    Rapcom_Heartbeat(connectionObject);
+    // Kick off a connection now, but do it with a short delay to give the client some time to setup callbacks.
+    setTimeout(Rapcom_Heartbeat, 100, connectionObject);
 
     // Return the object
     return connectionObject;
@@ -283,10 +283,9 @@ function Rapcom_SendCommand_Local(connectionObject, message)
     $.post({url:"http://" + connectionObject.LocalIp + ":" + connectionObject.LocalPort + "/api/v1/command", data:JSON.stringify(message), timeout:1000})
     .done(function(data)
     {
-        var response = JSON.parse(data);
         if(returnObj.complete != null)
         {
-            returnObj.complete(true, response);
+            returnObj.complete(true, data);
         } 
     })
     .fail(function(data) 

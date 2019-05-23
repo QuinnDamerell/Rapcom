@@ -1,5 +1,6 @@
 #include <string>
 #include <iostream>
+#include <vector>
 
 #include "internal/PollServer.h"
 
@@ -137,20 +138,26 @@ void PollServer::HandleWebCommand(const char* jsonStr, size_t length)
                 Value::ConstMemberIterator dataItr = requestDoc.FindMember("Data");
                 if (dataItr != requestDoc.MemberEnd() && dataItr->value.IsString())
                 {
-                    char* decodedString = new char[dataItr->value.GetStringLength()];
-                    mg_url_decode(dataItr->value.GetString(), dataItr->value.GetStringLength(), decodedString, dataItr->value.GetStringLength(), false);
-                    if (auto handler = m_commandHandler.lock())
-                    {
-                        // Send the command and get the response.
-                        m_response = handler->OnRawCommand(decodedString, dataItr->value.GetStringLength());
+					std::vector<char> decodedString(dataItr->value.GetStringLength() + 30);
+                    int outputSize = mg_url_decode(dataItr->value.GetString(), dataItr->value.GetStringLength(), decodedString.data(), decodedString.size(), false);
+					if (outputSize != -1)
+					{
+						if (auto handler = m_commandHandler.lock())
+						{
+							// Send the command and get the response.
+							m_response = handler->OnRawCommand(decodedString.data(), outputSize);
 
-                        // If we have something to respond with and a code make a request to send it.
-                        if (m_response.jsonResponse.size() > 0 && m_response.responseCode.size() > 0)
-                        {
-                            m_nextAction = NextAction::MakeResponseRequest;
-                        }
-                    }
-                    delete[] decodedString;
+							// If we have something to respond with and a code make a request to send it.
+							if (m_response.jsonResponse.size() > 0 && m_response.responseCode.size() > 0)
+							{
+								m_nextAction = NextAction::MakeResponseRequest;
+							}
+						}
+					}
+					else
+					{
+						std::cout << "Decoded string to osmall!";
+					}
                 }
                 else
                 {
