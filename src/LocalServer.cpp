@@ -99,7 +99,7 @@ void LocalServer::WriteJsonResponse(struct mg_connection* nc, std::string& json)
 {
 	size_t jsonSize = json.length();
 	const char* str = json.c_str();      
-	mg_printf(nc, "HTTP/1.1 200 OK\r\Content-Length:%d\r\nContent-Type:application/json\r\nAccess-Control-Allow-Origin:*\r\n\r\n%s", jsonSize, str);
+	mg_printf(nc, "HTTP/1.1 200 OK\r\nContent-Length:%d\r\nContent-Type:application/json\r\nAccess-Control-Allow-Origin:*\r\n\r\n%s", jsonSize, str);
 }
 
 void LocalServer::HandleWebCall(struct mg_connection *nc, int ev, void *ev_data)
