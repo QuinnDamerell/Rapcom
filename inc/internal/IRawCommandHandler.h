@@ -6,6 +6,7 @@
 
 namespace Rapcom
 {
+	DECLARE_SMARTPOINTER(RawCommandResponse);
     struct RawCommandResponse
     {
         std::string jsonResponse;

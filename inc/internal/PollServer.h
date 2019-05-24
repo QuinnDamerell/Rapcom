@@ -2,6 +2,8 @@
 
 #include "Common.h"
 
+#include <chrono>
+
 #include "mongoose.h"
 #include "internal/ThreadedObject.h"
 #include "internal/SharedFromThisHelper.h"
@@ -10,6 +12,8 @@
 
 namespace Rapcom
 {
+	typedef std::chrono::high_resolution_clock::time_point time_point;
+
     DECLARE_SMARTPOINTER(PollServer);
     class PollServer :
         public ThreadedObject,
@@ -20,9 +24,8 @@ namespace Rapcom
             m_eventManager{ 0 },
             m_isInited(false),
             m_commandHandler(commandHandler),
-            m_nextAction(NextAction::MakePollRequest),
-            m_shouldErrorSleep(false),
-            m_channelName(channelName)
+            m_channelName(channelName),
+			m_waitingOnPoll(false)
         {
             // Set the poll address
             m_pollAddress = "http://relay.quinndamerell.com/LongPoll.php?key=" + channelName + "Poll&clearValue=&expectingValue=";
@@ -62,17 +65,10 @@ namespace Rapcom
         // Handles a web command
         void HandleWebCommand(const char* jsonStr, size_t length);
 
-        // What action we need to make
-        enum class NextAction
-        {
-            MakePollRequest,
-            WaitingOnPollRequest,
-            MakeResponseRequest,
-            WaitOnResponseRequest
-        };
-        NextAction m_nextAction;
+		// The last time we make a poll request.
+		time_point m_lastPollRequest;
 
-        // If we should sleep because we are in error
-        bool m_shouldErrorSleep;
+		// Indicates if we currently waiting on the poll request.
+		bool m_waitingOnPoll = false;
     };
 }

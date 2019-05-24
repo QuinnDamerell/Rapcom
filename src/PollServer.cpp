@@ -51,29 +51,14 @@ bool PollServer::DoThreadWork()
 {
     if (m_isInited)
     {
-        // Check if we errored
-        if (m_shouldErrorSleep)
-        {
-            // We hit an error, try again in 30 seconds.
-            m_shouldErrorSleep = false;
-            std::this_thread::sleep_for(std::chrono::seconds(30));
-        }
-
-        // Do an action if we need to
-        switch (m_nextAction)
-        {
-        case PollServer::NextAction::MakePollRequest:
-            mg_connect_http(&m_eventManager, event_hander, m_pollAddress.c_str(), NULL, NULL);
-            m_nextAction = NextAction::WaitingOnPollRequest;
-            break;
-        case PollServer::NextAction::MakeResponseRequest:
-            // Build the post request and make the request
-            std::string responseUrl = "http://relay.quinndamerell.com/Blob.php?key=" + m_channelName + "_resp" + m_response.responseCode;          
-            std::string postData = "data=" + m_response.jsonResponse;
-            mg_connect_http(&m_eventManager, event_hander, responseUrl.c_str(), "Content-Type: application/x-www-form-urlencoded\r\n", postData.c_str());
-            m_nextAction = NextAction::WaitOnResponseRequest;
-            break;
-        }        
+		// Check if we should poll again.
+		auto diff = std::chrono::high_resolution_clock::now() - m_lastPollRequest;
+		if (!m_waitingOnPoll || std::chrono::duration_cast<std::chrono::seconds>(diff).count() > 30)
+		{
+			mg_connect_http(&m_eventManager, event_hander, m_pollAddress.c_str(), NULL, NULL);
+			m_lastPollRequest = std::chrono::high_resolution_clock::now();
+			m_waitingOnPoll = true;
+		} 
 
         // Poll when the timer fires.
         mg_mgr_poll(&m_eventManager, 10000);
@@ -96,12 +81,10 @@ void PollServer::HandleWebCall(struct mg_connection *nc, int ev, void *ev_data)
         {
             // If we failed to connect set the flag to sleep and report an error
             std::cout << "Failed to connect to web server for long poll\r\n";
-            m_shouldErrorSleep = true;
-            m_nextAction = NextAction::MakePollRequest;
+			m_waitingOnPoll = false;
         }
         break;
     case MG_EV_HTTP_REPLY:
-        nc->flags |= MG_F_CLOSE_IMMEDIATELY;
         HandleWebCommand(hm->body.p, hm->body.len);
         break;
     default:
@@ -111,23 +94,18 @@ void PollServer::HandleWebCall(struct mg_connection *nc, int ev, void *ev_data)
 
 void PollServer::HandleWebCommand(const char* jsonStr, size_t length)
 {
-    NextAction pastAction = m_nextAction;
-
-    // Set the next action to be a poll request. This will be updated below if we need to send a response.
-    m_nextAction = NextAction::MakePollRequest;
-
-    if (pastAction == NextAction::WaitOnResponseRequest)
-    {
-        // If this a response handle return now.
-        return;
-    }
-
     // Parse the input
     Document requestDoc;
     requestDoc.Parse(jsonStr, length);
 
+	std::string data(jsonStr, length);
+		
     if (!requestDoc.HasParseError() && requestDoc.HasMember("Status"))
     {
+		// If we got a status, this is a poll response.
+		// Indicate that we got it.
+		m_waitingOnPoll = false;
+
         Value::ConstMemberIterator itr = requestDoc.FindMember("Status");
         if (itr != requestDoc.MemberEnd() && itr->value.IsString())
         {
@@ -138,7 +116,7 @@ void PollServer::HandleWebCommand(const char* jsonStr, size_t length)
                 Value::ConstMemberIterator dataItr = requestDoc.FindMember("Data");
                 if (dataItr != requestDoc.MemberEnd() && dataItr->value.IsString())
                 {
-					std::vector<char> decodedString(dataItr->value.GetStringLength() + 30);
+					std::vector<char> decodedString(static_cast<int64_t>(dataItr->value.GetStringLength()) + 30);
                     int outputSize = mg_url_decode(dataItr->value.GetString(), dataItr->value.GetStringLength(), decodedString.data(), decodedString.size(), false);
 					if (outputSize != -1)
 					{
@@ -150,7 +128,9 @@ void PollServer::HandleWebCommand(const char* jsonStr, size_t length)
 							// If we have something to respond with and a code make a request to send it.
 							if (m_response.jsonResponse.size() > 0 && m_response.responseCode.size() > 0)
 							{
-								m_nextAction = NextAction::MakeResponseRequest;
+								std::string responseUrl = "http://relay.quinndamerell.com/Blob.php?key=" + m_channelName + "_resp" + m_response.responseCode;          
+								std::string postData = "data=" + m_response.jsonResponse;
+								mg_connect_http(&m_eventManager, event_hander, responseUrl.c_str(), "Content-Type: application/x-www-form-urlencoded\r\n", postData.c_str());
 							}
 						}
 					}
@@ -161,17 +141,13 @@ void PollServer::HandleWebCommand(const char* jsonStr, size_t length)
                 }
                 else
                 {
-                    std::cout << "Failed to parse data";
+                    std::cout << "Failed to parse data; " << data << "\n";
                 }                
             }
-        }
-        else
-        {
-            std::cout << "Invalid poll data returned";
         }
     }
     else
     {
-        std::cout << "Invalid poll data returned";
+        std::cout << "Invalid poll data returned ;" << data << "\n";
     }   
 }
